@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<title>汉字笔顺练习</title>
+
+<!-- Hanzi Writer -->
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
+
+<!-- QR Code -->
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --card:#ffffff;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --accent:#2563eb;
+    --danger:#d9534f;
+    --border:#e5e7eb;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:"Microsoft YaHei", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    padding:24px;
+    text-align:center;
+  }
+  .wrap{ max-width:900px; margin:0 auto; }
+  .title{ font-size:24px; margin:6px 0 18px; font-weight:700; }
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:16px;
+    padding:18px;
+    box-shadow:0 6px 20px rgba(17,24,39,0.06);
+    text-align:left;
+    margin:14px 0;
+  }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .label{ font-size:14px; color:var(--muted); margin:0 0 10px; }
+  textarea{
+    width:100%;
+    height:72px;
+    font-size:18px;
+    padding:12px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    outline:none;
+    resize:vertical;
+  }
+  input[type="text"]{
+    width:100%;
+    font-size:14px;
+    padding:10px 12px;
+    border:1px solid var(--border);
+    border-radius:12px;
+    outline:none;
+    background:#f9fafb;
+  }
+  button{
+    font-size:16px;
+    padding:10px 14px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:#fff;
+    cursor:pointer;
+  }
+  button.primary{
+    background:var(--accent);
+    border-color:var(--accent);
+    color:#fff;
+  }
+  button.danger{
+    background:var(--danger);
+    border-color:var(--danger);
+    color:#fff;
+  }
+  button:disabled{ opacity:.55; cursor:not-allowed; }
+  .split{
+    display:grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap:14px;
+  }
+  @media (max-width:820px){
+    .split{ grid-template-columns:1fr }
+  }
+  .hint{
+    font-size:13px;
+    color:var(--muted);
+    margin-top:6px;
+    line-height:1.5;
+  }
+  .hidden{ display:none; }
+
+  /* 学生区 */
+  #timer{
+    font-size:18px;
+    font-weight:700;
+    color:var(--danger);
+    margin:0 0 6px;
+    text-align:center;
+  }
+  #currentCharLine{
+    font-size:26px;
+    font-weight:800;
+    text-align:center;
+    margin:0 0 10px;
+  }
+
+  /* 真·田字格 */
+  #charStage{
+    width:260px;
+    height:260px;
+    margin:10px auto 8px;
+    position:relative;
+    border-radius:12px;
+    background:#fff;
+    border:2px solid rgba(17,24,39,.45);
+    overflow:hidden;
+  }
+  #charStage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:
+      linear-gradient(to right,
+        transparent calc(50% - 1px),
+        rgba(17,24,39,.35) calc(50% - 1px),
+        rgba(17,24,39,.35) calc(50% + 1px),
+        transparent calc(50% + 1px)
+      ),
+      linear-gradient(to bottom,
+        transparent calc(50% - 1px),
+        rgba(17,24,39,.35) calc(50% - 1px),
+        rgba(17,24,39,.35) calc(50% + 1px),
+        transparent calc(50% + 1px)
+      );
+  }
+  #charBox{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .center{ text-align:center; }
+  .resultBox{
+    text-align:center;
+    padding:18px;
+    border:1px dashed var(--border);
+    border-radius:14px;
+    background:#fafafa;
+  }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- ============ 教师界面 ============ -->
+  <div id="teacherPanel">
+    <div class="title">汉字笔顺练习（教师控制台）</div>
+
+    <div class="card">
+      <div class="label">输入汉字（用<strong>顿号或逗号</strong>分开，例如：一、二，五,口，人）</div>
+      <textarea id="charInput">一、二，五,口，人</textarea>
+
+      <div class="row" style="margin-top:12px; justify-content:flex-start;">
+        <button class="primary" onclick="generateURL()">产生 URL</button>
+        <button onclick="generateQR()">产生 QR Code</button>
+      </div>
+    </div>
+
+    <div class="card" id="shareCard">
+      <div class="label">学生游戏 URL</div>
+      <input id="urlBox" type="text" readonly placeholder="按「产生 URL」后会显示在这里">
+
+      <div class="split" style="margin-top:12px;">
+        <div>
+          <div class="label">二维码</div>
+          <div class="hint">按「产生 QR Code」后会显示在右侧区域。</div>
+        </div>
+        <div class="center">
+          <div id="qrcode"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 学生界面 ============ -->
+  <div id="studentPanel" class="hidden">
+    <div class="title">汉字笔顺挑战</div>
+
+    <div class="card">
+      <div class="label">选择项目</div>
+      <div class="row">
+        <button class="primary modeBtn" onclick="startMode('learn')">学习</button>
+        <button class="primary modeBtn" onclick="startMode('easy')">初级</button>
+        <button class="primary modeBtn" onclick="startMode('medium')">中级</button>
+        <button class="primary modeBtn" onclick="startMode('hard')">高级</button>
+      </div>
+      <div class="hint">
+        学习：展示所有字的笔顺（没有时间限制）<br>
+        初级：写错 <strong>2</strong> 次后，会出现提示<br>
+        中级：写错 <strong>2</strong> 次后，会出现提示<br>
+        高级：没有提示。加油，你可以的！
+      </div>
+    </div>
+
+    <div class="card hidden" id="gameArea">
+      <div id="timer">剩余时间：1:00</div>
+      <div id="currentCharLine">当前字：-</div>
+
+      <div id="charStage">
+        <div id="charBox"></div>
+      </div>
+
+      <div class="row">
+        <!-- ✅ 播放笔顺：只在学习模式显示 -->
+        <button id="playBtn" onclick="play()">播放笔顺</button>
+
+        <!-- ✅ 下一个：只在学习模式显示；初/中/高隐藏 -->
+        <button id="nextBtn" class="primary" onclick="nextChar()">下一个</button>
+
+        <!-- ✅ 重置：所有模式都显示 -->
+        <button class="danger" onclick="resetToHome()">重置</button>
+      </div>
+
+      <div class="hint center" id="progressText"></div>
+      <div class="hint center" id="strokeInfo"></div>
+    </div>
+
+    <div class="card hidden" id="resultCard">
+      <div class="resultBox" id="result"></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="primary" onclick="restart()">回到选择</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ================= 模式判断（同一份HTML自动切换教师/学生） ================= */
+const params = new URLSearchParams(window.location.search);
+const rawChars = params.get("chars");
+
+if (rawChars) {
+  document.getElementById("teacherPanel").classList.add("hidden");
+  document.getElementById("studentPanel").classList.remove("hidden");
+}
+
+/* ================= 教师：解析与生成链接 ================= */
+function parseChars(text) {
+  return text.split(/[、，,]/).map(c => c.trim()).filter(Boolean);
+}
+function getBaseURLWithoutQuery() {
+  return window.location.href.split("?")[0];
+}
+function getStudentURL() {
+  const raw = document.getElementById("charInput").value;
+  const chars = parseChars(raw);
+  if (chars.length === 0) {
+    alert("请输入至少一个汉字");
+    return null;
+  }
+  return getBaseURLWithoutQuery() + "?chars=" + encodeURIComponent(chars.join(","));
+}
+function generateURL() {
+  const url = getStudentURL();
+  if (!url) return;
+  document.getElementById("urlBox").value = url;
+  document.getElementById("shareCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+function generateQR() {
+  const url = getStudentURL();
+  if (!url) return;
+  document.getElementById("urlBox").value = url;
+  const qr = document.getElementById("qrcode");
+  qr.innerHTML = "";
+  new QRCode(qr, { text: url, width: 180, height: 180 });
+  document.getElementById("shareCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ================= 学生：难度参数 ================= */
+const difficulty = {
+  easy:   { maxDistance: 18, hintAfter: 2 },
+  medium: { maxDistance: 12, hintAfter: 4 },
+  hard:   { maxDistance: 8,  hintAfter: 999999 },
+  learn:  { maxDistance: 18, hintAfter: 999999 }
+};
+
+/* ================= 学生：游戏配置 ================= */
+let chars = [];
+let idx = 0;
+let writer = null;
+
+let completedChars = 0;
+const GAME_SECONDS = 60;
+let timeLeft = GAME_SECONDS;
+let timerId = null;
+
+let currentMode = null;
+let modeConfig = null;
+
+let mistakesThisChar = 0;
+let lastHintStroke = null;
+let lastHintAt = 0;
+
+if (rawChars) {
+  chars = rawChars.split(",").map(s => s.trim()).filter(Boolean);
+}
+
+function lockModeButtons(locked) {
+  document.querySelectorAll(".modeBtn").forEach(b => b.disabled = locked);
+}
+
+function updateCurrentCharUI() {
+  const ch = (chars && chars.length) ? chars[idx] : "-";
+  document.getElementById("currentCharLine").innerText = `当前字：${ch}`;
+}
+
+function updateProgressText() {
+  const modeName =
+    currentMode === "learn" ? "学习" :
+    currentMode === "easy" ? "初级" :
+    currentMode === "medium" ? "中级" : "高级";
+
+  const extra = (currentMode === "learn")
+    ? ""
+    : `已成功写对：${completedChars} 个`;
+
+  document.getElementById("progressText").innerText =
+    extra ? `项目：${modeName}｜${extra}` : `项目：${modeName}`;
+}
+
+/* ========= 提示：浅蓝色，只提示“当前该写的那一笔”，不代写 ========= */
+const HINT_COLOR = "#93c5fd";
+const HINT_MS = 450;
+const HINT_COOLDOWN_MS = 250;
+
+function getCorrectStrokeIndex(strokeData) {
+  const raw = (strokeData && typeof strokeData.strokeNum === "number") ? strokeData.strokeNum : 0;
+
+  const canInferTotal =
+    strokeData &&
+    typeof strokeData.strokeNum === "number" &&
+    typeof strokeData.strokesRemaining === "number";
+
+  if (canInferTotal) {
+    const total = strokeData.strokeNum + strokeData.strokesRemaining;
+    if (typeof total === "number" && total > 0) {
+      let n = raw;
+      if (n < 0 || n >= total) n = raw - 1;
+      if (n < 0 || n >= total) n = 0;
+      return n;
+    }
+  }
+  return Math.max(0, raw);
+}
+
+function hintCurrentStroke(strokeData) {
+  if (!writer) return;
+  if (typeof writer.highlightStroke !== "function") return;
+
+  const n = getCorrectStrokeIndex(strokeData);
+
+  const now = Date.now();
+  if (lastHintStroke === n && (now - lastHintAt) < HINT_COOLDOWN_MS) return;
+
+  lastHintStroke = n;
+  lastHintAt = now;
+
+  try {
+    writer.highlightStroke(n, { strokeColor: HINT_COLOR, outlineColor: HINT_COLOR });
+    setTimeout(() => {
+      if (typeof writer.unhighlightStroke === "function") writer.unhighlightStroke(n);
+      if (typeof writer.cancelHighlight === "function") writer.cancelHighlight();
+    }, HINT_MS);
+  } catch (e) {}
+}
+
+/* ================= 重置逻辑 ================= */
+function goToStudentHome() {
+  if (timerId) clearInterval(timerId);
+  timerId = null;
+
+  if (writer) {
+    try { writer.cancelQuiz(); } catch(e) {}
+  }
+
+  currentMode = null;
+  modeConfig = null;
+  completedChars = 0;
+  idx = 0;
+  mistakesThisChar = 0;
+  lastHintStroke = null;
+  lastHintAt = 0;
+
+  timeLeft = GAME_SECONDS;
+  updateTimerText();
+
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("resultCard").classList.add("hidden");
+  lockModeButtons(false);
+
+  document.getElementById("studentPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function resetToHome() {
+  if (currentMode === "learn") {
+    goToStudentHome();
+    return;
+  }
+  const ok = window.confirm("你的游戏分数将归零哦！");
+  if (ok) goToStudentHome();
+}
+
+/* ================= 模式 UI：学习显示播放+下一个；其他隐藏它们 ================= */
+function applyModeUI() {
+  const timerEl = document.getElementById("timer");
+  const playBtn = document.getElementById("playBtn");
+  const nextBtn = document.getElementById("nextBtn");
+
+  if (currentMode === "learn") {
+    timerEl.classList.add("hidden");        // 学习不显示倒数
+    playBtn.classList.remove("hidden");     // 学习显示播放
+    nextBtn.classList.remove("hidden");     // 学习显示下一个
+  } else {
+    timerEl.classList.remove("hidden");     // 初/中/高显示倒数
+    playBtn.classList.add("hidden");        // 初/中/高隐藏播放
+    nextBtn.classList.add("hidden");        // ✅ 初/中/高隐藏下一个（学生必须写）
+  }
+}
+
+function startMode(mode) {
+  if (!chars || chars.length === 0) {
+    alert("链接里没有汉字（chars 参数为空）");
+    return;
+  }
+
+  currentMode = mode;
+  modeConfig = difficulty[mode];
+
+  idx = 0;
+  completedChars = 0;
+
+  if (currentMode === "learn") {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+    timeLeft = GAME_SECONDS;
+  } else {
+    timeLeft = GAME_SECONDS;
+  }
+  updateTimerText();
+
+  lockModeButtons(true);
+  document.getElementById("resultCard").classList.add("hidden");
+  document.getElementById("gameArea").classList.remove("hidden");
+  document.getElementById("strokeInfo").innerText = "";
+
+  applyModeUI();
+  loadCurrentChar();
+
+  if (currentMode !== "learn") startTimer();
+}
+
+function createWriterForChar(ch) {
+  document.getElementById("charBox").innerHTML = "";
+  return HanziWriter.create("charBox", ch, {
+    width: 260,
+    height: 260,
+    padding: 18,
+    showCharacter: false,
+    showOutline: false
+  });
+}
+
+function loadCurrentChar() {
+  if (writer) {
+    try { writer.cancelQuiz(); } catch(e) {}
+  }
+
+  mistakesThisChar = 0;
+  lastHintStroke = null;
+  lastHintAt = 0;
+
+  writer = createWriterForChar(chars[idx]);
+
+  updateCurrentCharUI();
+  updateProgressText();
+  document.getElementById("strokeInfo").innerText = "";
+
+  if (currentMode === "learn") {
+    writer.showOutline();
+    writer.animateCharacter();
+    return;
+  }
+
+  writer.quiz({
+    showHintAfterMisses: false,
+
+    onStrokeEnd: (i, c, ok) => {
+      document.getElementById("strokeInfo").innerText =
+        ok ? `✔ 第 ${i+1} 笔正确` : "❌ 笔顺或位置不对";
+    },
+
+    customStrokeValidator: (student, correct) => {
+      if (!student) return true;
+      const maxD = modeConfig.maxDistance;
+
+      for (let i = 0; i < student.length; i++) {
+        const d = Math.hypot(
+          student[i][0] - correct[i][0],
+          student[i][1] - correct[i][1]
+        );
+        if (d > maxD) return false;
+      }
+      return true;
+    },
+
+    onMistake: (strokeData) => {
+      mistakesThisChar++;
+      if (mistakesThisChar >= modeConfig.hintAfter) {
+        hintCurrentStroke(strokeData);
+      }
+    },
+
+    onComplete: () => {
+      completedChars++;
+      updateProgressText();
+
+      try { writer.showCharacter(); } catch(e) {}
+      try { writer.hideOutline(); } catch(e) {}
+
+      setTimeout(() => {
+        if (timeLeft <= 0) return;
+        idx = (idx + 1) % chars.length;
+        loadCurrentChar();
+      }, 1000);
+    }
+  });
+}
+
+/* 播放：仅学习按钮可见 */
+function play() {
+  if (writer) writer.animateCharacter();
+}
+
+/* 下一个：仅学习按钮可见 */
+function nextChar() {
+  if (!chars || chars.length === 0) return;
+  idx = (idx + 1) % chars.length;
+  loadCurrentChar();
+}
+
+/* ================= 倒数与结算（仅初/中/高使用） ================= */
+function startTimer() {
+  updateTimerText();
+  if (timerId) clearInterval(timerId);
+
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimerText();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function updateTimerText() {
+  const m = Math.floor(timeLeft / 60);
+  const s = String(timeLeft % 60).padStart(2, "0");
+  document.getElementById("timer").innerText = `剩余时间：${m}:${s}`;
+}
+
+function endGame() {
+  if (timerId) clearInterval(timerId);
+  timerId = null;
+
+  if (writer) {
+    try { writer.cancelQuiz(); } catch(e) {}
+  }
+
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("resultCard").classList.remove("hidden");
+
+  document.getElementById("result").innerHTML =
+    `🎉 <h3 style="margin:8px 0;">恭喜你！</h3>
+     <p style="margin:0; font-size:16px;">你已经成功写了 <strong style="font-size:20px;">${completedChars}</strong> 个字！</p>`;
+}
+
+function restart() {
+  if (timerId) clearInterval(timerId);
+  timerId = null;
+
+  if (writer) {
+    try { writer.cancelQuiz(); } catch(e) {}
+  }
+
+  lockModeButtons(false);
+  document.getElementById("resultCard").classList.add("hidden");
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("strokeInfo").innerText = "";
+}
+</script>
+
+</body>
+</html>

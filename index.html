@@ -4,10 +4,7 @@
 <meta charset="UTF-8">
 <title>汉字笔顺练习</title>
 
-<!-- Hanzi Writer -->
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
-
-<!-- QR Code -->
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 
 <style>
@@ -40,7 +37,9 @@
     text-align:left;
     margin:14px 0;
   }
-  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+  .row.left{ justify-content:flex-start; }
+  .row.center{ justify-content:center; }
   .label{ font-size:14px; color:var(--muted); margin:0 0 10px; }
   textarea{
     width:100%;
@@ -52,7 +51,7 @@
     outline:none;
     resize:vertical;
   }
-  input[type="text"]{
+  input[type="text"], input[type="number"]{
     width:100%;
     font-size:14px;
     padding:10px 12px;
@@ -60,6 +59,14 @@
     border-radius:12px;
     outline:none;
     background:#f9fafb;
+  }
+  .grid2{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap:12px;
+  }
+  @media (max-width:820px){
+    .grid2{ grid-template-columns:1fr; }
   }
   button{
     font-size:16px;
@@ -80,6 +87,7 @@
     color:#fff;
   }
   button:disabled{ opacity:.55; cursor:not-allowed; }
+
   .split{
     display:grid;
     grid-template-columns: 1.2fr .8fr;
@@ -111,7 +119,7 @@
     margin:0 0 10px;
   }
 
-  /* 真·田字格 */
+  /* 田字格 */
   #charStage{
     width:260px;
     height:260px;
@@ -149,7 +157,6 @@
     justify-content:center;
   }
 
-  .center{ text-align:center; }
   .resultBox{
     text-align:center;
     padding:18px;
@@ -163,7 +170,7 @@
 <body>
 <div class="wrap">
 
-  <!-- ============ 教师界面 ============ -->
+  <!-- 教师 -->
   <div id="teacherPanel">
     <div class="title">汉字笔顺练习（教师控制台）</div>
 
@@ -171,7 +178,16 @@
       <div class="label">输入汉字（用<strong>顿号或逗号</strong>分开，例如：一、二，五,口，人）</div>
       <textarea id="charInput">一、二，五,口，人</textarea>
 
-      <div class="row" style="margin-top:12px; justify-content:flex-start;">
+      <div class="grid2" style="margin-top:12px;">
+        <div>
+          <div class="label" style="margin:0 0 8px;">游戏时间（分钟，仅用于初/中/高；学习不倒数）</div>
+          <input id="timeInput" type="number" min="1" max="60" value="1">
+          <div class="hint">范围预设 1–60 分钟</div>
+        </div>
+
+      </div>
+
+      <div class="row left" style="margin-top:12px;">
         <button class="primary" onclick="generateURL()">产生 URL</button>
         <button onclick="generateQR()">产生 QR Code</button>
       </div>
@@ -186,59 +202,54 @@
           <div class="label">二维码</div>
           <div class="hint">按「产生 QR Code」后会显示在右侧区域。</div>
         </div>
-        <div class="center">
+        <div style="text-align:center">
           <div id="qrcode"></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ============ 学生界面 ============ -->
+  <!-- 学生 -->
   <div id="studentPanel" class="hidden">
     <div class="title">汉字笔顺挑战</div>
 
     <div class="card">
       <div class="label">选择项目</div>
-      <div class="row">
+      <div class="row center">
         <button class="primary modeBtn" onclick="startMode('learn')">学习</button>
         <button class="primary modeBtn" onclick="startMode('easy')">初级</button>
         <button class="primary modeBtn" onclick="startMode('medium')">中级</button>
         <button class="primary modeBtn" onclick="startMode('hard')">高级</button>
       </div>
       <div class="hint">
-        学习：展示所有字的笔顺（没有时间限制）<br>
-        初级：写错 <strong>2</strong> 次后，会出现提示<br>
-        中级：写错 <strong>4</strong> 次后，会出现提示<br>
-        高级：没有提示。加油，你可以的！
+	学习：展示所有字的笔顺（没有时间限制）<br> 
+	初级：写错 <strong>2</strong> 次后，会出现提示<br> 
+	中级：写错 <strong>4</strong> 次后，会出现提示<br> 
+	高级：没有提示。加油，你可以的！
       </div>
     </div>
 
     <div class="card hidden" id="gameArea">
-      <div id="timer">剩余时间：1:00</div>
+      <div id="timer">剩余时间：0:00</div>
       <div id="currentCharLine">当前字：-</div>
 
       <div id="charStage">
         <div id="charBox"></div>
       </div>
 
-      <div class="row">
-        <!-- ✅ 播放笔顺：只在学习模式显示 -->
+      <div class="row center">
         <button id="playBtn" onclick="play()">播放笔顺</button>
-
-        <!-- ✅ 下一个：只在学习模式显示；初/中/高隐藏 -->
         <button id="nextBtn" class="primary" onclick="nextChar()">下一个</button>
-
-        <!-- ✅ 重置：所有模式都显示 -->
         <button class="danger" onclick="resetToHome()">重置</button>
       </div>
 
-      <div class="hint center" id="progressText"></div>
-      <div class="hint center" id="strokeInfo"></div>
+      <div class="hint" style="text-align:center" id="progressText"></div>
+      <div class="hint" style="text-align:center" id="strokeInfo"></div>
     </div>
 
     <div class="card hidden" id="resultCard">
       <div class="resultBox" id="result"></div>
-      <div class="row" style="margin-top:10px;">
+      <div class="row center" style="margin-top:10px;">
         <button class="primary" onclick="restart()">回到选择</button>
       </div>
     </div>
@@ -247,21 +258,23 @@
 </div>
 
 <script>
-/* ================= 模式判断（同一份HTML自动切换教师/学生） ================= */
-const params = new URLSearchParams(window.location.search);
-const rawChars = params.get("chars");
-
-if (rawChars) {
-  document.getElementById("teacherPanel").classList.add("hidden");
-  document.getElementById("studentPanel").classList.remove("hidden");
-}
-
-/* ================= 教师：解析与生成链接 ================= */
+/* ================= 通用：解析 ================= */
 function parseChars(text) {
   return text.split(/[、，,]/).map(c => c.trim()).filter(Boolean);
 }
 function getBaseURLWithoutQuery() {
   return window.location.href.split("?")[0];
+}
+function clampInt(n, min, max, fallback){
+  n = parseInt(n, 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, n));
+}
+
+/* ================= 教师：生成URL/QR（一定可用） ================= */
+function getTeacherMinutes() {
+  // 预设 1–60 分钟（要改就改这两个数字）
+  return clampInt(document.getElementById("timeInput").value, 1, 60, 1);
 }
 function getStudentURL() {
   const raw = document.getElementById("charInput").value;
@@ -270,7 +283,12 @@ function getStudentURL() {
     alert("请输入至少一个汉字");
     return null;
   }
-  return getBaseURLWithoutQuery() + "?chars=" + encodeURIComponent(chars.join(","));
+  const minutes = getTeacherMinutes();
+  return (
+    getBaseURLWithoutQuery() +
+    "?chars=" + encodeURIComponent(chars.join(",")) +
+    "&t=" + encodeURIComponent(String(minutes))
+  );
 }
 function generateURL() {
   const url = getStudentURL();
@@ -281,11 +299,24 @@ function generateURL() {
 function generateQR() {
   const url = getStudentURL();
   if (!url) return;
+
   document.getElementById("urlBox").value = url;
   const qr = document.getElementById("qrcode");
   qr.innerHTML = "";
   new QRCode(qr, { text: url, width: 180, height: 180 });
+
   document.getElementById("shareCard").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ================= 学生：只有在学生模式才读取 query ================= */
+const params = new URLSearchParams(window.location.search);
+const rawChars = params.get("chars");
+
+/* 学生端：读取老师设定的分钟数（t），默认 1 分钟 */
+function readGameSecondsFromQuery() {
+  // 预设 1–60 分钟（要改就改这两个数字）
+  const minutes = clampInt(params.get("t"), 1, 60, 1);
+  return minutes * 60;
 }
 
 /* ================= 学生：难度参数 ================= */
@@ -296,14 +327,14 @@ const difficulty = {
   learn:  { maxDistance: 18, hintAfter: 999999 }
 };
 
-/* ================= 学生：游戏配置 ================= */
+/* ================= 学生：状态 ================= */
 let chars = [];
 let idx = 0;
 let writer = null;
 
 let completedChars = 0;
-const GAME_SECONDS = 60;
-let timeLeft = GAME_SECONDS;
+let GAME_SECONDS = 60;   // 学生模式会覆盖
+let timeLeft = 60;
 let timerId = null;
 
 let currentMode = null;
@@ -313,34 +344,37 @@ let mistakesThisChar = 0;
 let lastHintStroke = null;
 let lastHintAt = 0;
 
+/* ================= 进入学生模式/教师模式 ================= */
 if (rawChars) {
+  document.getElementById("teacherPanel").classList.add("hidden");
+  document.getElementById("studentPanel").classList.remove("hidden");
+
   chars = rawChars.split(",").map(s => s.trim()).filter(Boolean);
+  GAME_SECONDS = readGameSecondsFromQuery();
+  timeLeft = GAME_SECONDS;
+  updateTimerText();
 }
 
+/* ================= UI helpers ================= */
 function lockModeButtons(locked) {
   document.querySelectorAll(".modeBtn").forEach(b => b.disabled = locked);
 }
-
 function updateCurrentCharUI() {
   const ch = (chars && chars.length) ? chars[idx] : "-";
   document.getElementById("currentCharLine").innerText = `当前字：${ch}`;
 }
-
 function updateProgressText() {
   const modeName =
     currentMode === "learn" ? "学习" :
     currentMode === "easy" ? "初级" :
     currentMode === "medium" ? "中级" : "高级";
 
-  const extra = (currentMode === "learn")
-    ? ""
-    : `已成功写对：${completedChars} 个`;
-
+  const extra = (currentMode === "learn") ? "" : `已成功写对：${completedChars} 个`;
   document.getElementById("progressText").innerText =
     extra ? `项目：${modeName}｜${extra}` : `项目：${modeName}`;
 }
 
-/* ========= 提示：浅蓝色，只提示“当前该写的那一笔”，不代写 ========= */
+/* ================= 提示（浅蓝） ================= */
 const HINT_COLOR = "#93c5fd";
 const HINT_MS = 450;
 const HINT_COOLDOWN_MS = 250;
@@ -370,7 +404,6 @@ function hintCurrentStroke(strokeData) {
   if (typeof writer.highlightStroke !== "function") return;
 
   const n = getCorrectStrokeIndex(strokeData);
-
   const now = Date.now();
   if (lastHintStroke === n && (now - lastHintAt) < HINT_COOLDOWN_MS) return;
 
@@ -386,7 +419,7 @@ function hintCurrentStroke(strokeData) {
   } catch (e) {}
 }
 
-/* ================= 重置逻辑 ================= */
+/* ================= 重置 ================= */
 function goToStudentHome() {
   if (timerId) clearInterval(timerId);
   timerId = null;
@@ -399,6 +432,7 @@ function goToStudentHome() {
   modeConfig = null;
   completedChars = 0;
   idx = 0;
+
   mistakesThisChar = 0;
   lastHintStroke = null;
   lastHintAt = 0;
@@ -422,23 +456,24 @@ function resetToHome() {
   if (ok) goToStudentHome();
 }
 
-/* ================= 模式 UI：学习显示播放+下一个；其他隐藏它们 ================= */
+/* ================= 模式 UI：学习显示播放+下一个，隐藏timer；其他相反 ================= */
 function applyModeUI() {
   const timerEl = document.getElementById("timer");
   const playBtn = document.getElementById("playBtn");
   const nextBtn = document.getElementById("nextBtn");
 
   if (currentMode === "learn") {
-    timerEl.classList.add("hidden");        // 学习不显示倒数
-    playBtn.classList.remove("hidden");     // 学习显示播放
-    nextBtn.classList.remove("hidden");     // 学习显示下一个
+    timerEl.classList.add("hidden");
+    playBtn.classList.remove("hidden");
+    nextBtn.classList.remove("hidden");
   } else {
-    timerEl.classList.remove("hidden");     // 初/中/高显示倒数
-    playBtn.classList.add("hidden");        // 初/中/高隐藏播放
-    nextBtn.classList.add("hidden");        // ✅ 初/中/高隐藏下一个（学生必须写）
+    timerEl.classList.remove("hidden");
+    playBtn.classList.add("hidden");
+    nextBtn.classList.add("hidden"); // 初/中/高：没有下一个（学生必须写）
   }
 }
 
+/* ================= 开始模式 ================= */
 function startMode(mode) {
   if (!chars || chars.length === 0) {
     alert("链接里没有汉字（chars 参数为空）");
@@ -454,23 +489,25 @@ function startMode(mode) {
   if (currentMode === "learn") {
     if (timerId) clearInterval(timerId);
     timerId = null;
-    timeLeft = GAME_SECONDS;
+    timeLeft = GAME_SECONDS; // 不倒数
   } else {
-    timeLeft = GAME_SECONDS;
+    timeLeft = GAME_SECONDS; // 用老师设定的时间倒数
   }
+
   updateTimerText();
+  applyModeUI();
 
   lockModeButtons(true);
   document.getElementById("resultCard").classList.add("hidden");
   document.getElementById("gameArea").classList.remove("hidden");
   document.getElementById("strokeInfo").innerText = "";
 
-  applyModeUI();
   loadCurrentChar();
 
   if (currentMode !== "learn") startTimer();
 }
 
+/* ================= Hanzi Writer ================= */
 function createWriterForChar(ch) {
   document.getElementById("charBox").innerHTML = "";
   return HanziWriter.create("charBox", ch, {
@@ -514,12 +551,8 @@ function loadCurrentChar() {
     customStrokeValidator: (student, correct) => {
       if (!student) return true;
       const maxD = modeConfig.maxDistance;
-
       for (let i = 0; i < student.length; i++) {
-        const d = Math.hypot(
-          student[i][0] - correct[i][0],
-          student[i][1] - correct[i][1]
-        );
+        const d = Math.hypot(student[i][0] - correct[i][0], student[i][1] - correct[i][1]);
         if (d > maxD) return false;
       }
       return true;
@@ -548,19 +581,14 @@ function loadCurrentChar() {
   });
 }
 
-/* 播放：仅学习按钮可见 */
-function play() {
-  if (writer) writer.animateCharacter();
-}
-
-/* 下一个：仅学习按钮可见 */
+/* 学习模式按钮 */
+function play() { if (writer) writer.animateCharacter(); }
 function nextChar() {
-  if (!chars || chars.length === 0) return;
   idx = (idx + 1) % chars.length;
   loadCurrentChar();
 }
 
-/* ================= 倒数与结算（仅初/中/高使用） ================= */
+/* ================= 倒数（仅初/中/高） ================= */
 function startTimer() {
   updateTimerText();
   if (timerId) clearInterval(timerId);
@@ -611,4 +639,3 @@ function restart() {
 
 </body>
 </html>
-

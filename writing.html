@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>汉字笔顺练习 · 教学数据分析完整版</title>
+<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5.0/dist/hanzi-writer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#1f2937;--muted:#6b7280;--accent:#2563eb;--danger:#d9534f;--border:#e5e7eb;--warn:#f59e0b;}
+*{box-sizing:border-box}
+body{margin:0;padding:24px;text-align:center;font-family:"Microsoft YaHei", system-ui, Segoe UI, Roboto, Arial, sans-serif;background:var(--bg);color:var(--text);}
+.wrap{max-width:1200px;margin:0 auto;}
+.title{font-size:26px;margin:6px 0 18px;font-weight:700;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:24px;padding:20px 24px;box-shadow:0 8px 24px rgba(17,24,39,0.06);text-align:left;margin:16px 0;}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:center;}
+.row.center{justify-content:center;}
+.label{font-size:14px;color:var(--muted);margin:0 0 10px;font-weight:500;}
+textarea{width:100%;height:80px;font-size:18px;padding:12px;border:1px solid var(--border);border-radius:16px;outline:none;resize:vertical;font-family:monospace;}
+input[type="text"],input[type="number"],select{width:100%;font-size:14px;padding:10px 14px;border:1px solid var(--border);border-radius:16px;outline:none;background:#f9fafb;}
+button{font-size:16px;padding:10px 18px;border-radius:40px;border:1px solid var(--border);background:#fff;cursor:pointer;transition:0.2s;}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+button.success{background:#10b981;border-color:#10b981;color:#fff;}
+button.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+button.warning{background:var(--warn);border-color:var(--warn);color:#fff;}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+.hidden{display:none;}
+#timer{font-size:20px;font-weight:700;color:var(--danger);margin:0 0 12px;text-align:center;}
+#currentCharLine{font-size:28px;font-weight:800;text-align:center;margin:0 0 6px;}
+#charStage{width:280px;height:280px;margin:10px auto 8px;position:relative;border-radius:16px;background:#fffaf0;border:2px solid #d4c5a3;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+/* 田字格网格线 */
+#charStage::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right, transparent calc(50% - 1px), rgba(0,0,0,.12) calc(50% - 1px), rgba(0,0,0,.12) calc(50% + 1px), transparent calc(50% + 1px)),linear-gradient(to bottom, transparent calc(50% - 1px), rgba(0,0,0,.12) calc(50% - 1px), rgba(0,0,0,.12) calc(50% + 1px), transparent calc(50% + 1px));z-index:2;}
+#charBox{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.resultBox{text-align:center;padding:18px;border:1px dashed var(--border);border-radius:20px;background:#fafafa;}
+.split-container { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.left-panel { flex: 3; min-width: 220px; }
+.right-panel { flex: 7; min-width: 280px; position: relative; }
+.mode-desc-card { background: #f3f4f6; border-radius: 24px; padding: 20px 18px; margin-top: 8px; line-height: 1.7; font-size: 20px; font-weight: 500; color: #1e293b; border: 1px solid #e2e8f0; }
+.mode-desc-card .desc-line { margin: 10px 0; display: flex; align-items: center; gap: 8px; }
+.unlock-card { background: #fff9ef; border-left: 5px solid #f59e0b; }
+.unlock-row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin: 8px 0 6px; }
+.unlock-input { flex: 2; min-width: 200px; padding: 14px 20px !important; font-size: 18px !important; border-radius: 48px !important; background: white; border: 1.5px solid #fed7aa; transition: 0.2s; font-weight: 500; text-align: center; }
+.unlock-input:focus { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245,158,11,0.2); outline: none; }
+.unlock-btn { flex-shrink: 0; padding: 12px 28px; font-size: 16px; background: #f59e0b; border: none; color: white; border-radius: 48px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+.unlock-btn:hover { background: #d97706; transform: scale(0.97); }
+#qrcode { display: flex; justify-content: center; align-items: center; padding: 16px; background: white; border-radius: 20px; display: inline-flex; margin: 0 auto; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.gem-counter { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 8px 20px; border-radius: 40px; margin-bottom: 12px; font-size: 20px; font-weight: bold; color: #b45309; border: 1px solid #fcd34d; }
+.gem-icon { font-size: 24px; animation: gemGlow 1s ease-in-out infinite alternate; }
+@keyframes gemGlow { from { text-shadow: 0 0 2px #fbbf24; } to { text-shadow: 0 0 10px #f59e0b; } }
+.login-card { text-align: center; max-width: 400px; margin: 40px auto; }
+.login-input { font-size: 24px; padding: 16px 20px; text-align: center; border-radius: 60px; border: 2px solid #fcd34d; background: #fffbeb; width: 100%; }
+.login-select { font-size: 18px; padding: 14px 20px; text-align: center; border-radius: 60px; border: 2px solid #fcd34d; background: #fffbeb; width: 100%; margin-bottom: 16px; cursor: pointer; }
+.score-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+.score-table th, .score-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+.score-table th { background: #f3f4f6; }
+.stats-card { background: #eef2ff; border-radius: 16px; padding: 12px; margin-top: 12px; }
+.stats-row { display: flex; justify-content: space-between; margin: 6px 0; font-size: 14px; }
+.complete-btn { background: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 40px; font-size: 14px; cursor: pointer; margin-left: 10px; }
+.complete-btn:hover { background: #059669; }
+.filter-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.filter-select { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 13px; }
+@media (max-width: 720px) { .split-container { flex-direction: column; } .left-panel, .right-panel { flex: auto; width: 100%; } #charStage { width: 250px; height: 250px; } .mode-desc-card { font-size: 18px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <!-- 教师控制台 -->
+  <div id="teacherPanel">
+    <div class="title">📖 汉字笔顺练习 · 教师控制台</div>
+    <div class="card">
+      <div class="label">✍️ 汉字列表（用顿号或逗号分开）</div>
+      <textarea id="charInput">一、二、三、口、人、大、小</textarea>
+      <div class="label" style="margin-top:12px;">⏱️ 挑战模式时长（分钟）</div>
+      <input id="timeInput" type="number" min="1" max="60" value="1">
+      <div class="label" style="margin-top:12px;">🔐 挑战模式密码（解锁初级/中级/高级）</div>
+      <input id="challengePwInput" type="text" value="1234" placeholder="教师设定密码">
+      <div class="row" style="margin-top:16px;">
+        <button class="primary" id="genUrlBtn">🔗 生成练习链接</button>
+        <button class="success" id="openGameBtn">👆 打开游戏演示</button>
+        <button id="genQrBtn" class="primary">📱 生成二维码</button>
+      </div>
+    </div>
+    <div class="card" id="shareCard">
+      <div class="label">🔗 学生专属链接（复制或扫码）</div>
+      <input id="urlBox" type="text" readonly placeholder="点击「生成练习链接」后自动产生">
+      <div id="qrcode" style="margin-top:12px; display:flex; justify-content:center;"></div>
+    </div>
+    <div class="card">
+      <div class="label">📊 学生学习数据总览</div>
+      <div class="stats-card">
+        <div class="stats-row"><strong>📈 总练习次数</strong><span id="totalSessions">0</span></div>
+        <div class="stats-row"><strong>👥 参与学生数</strong><span id="totalStudents">0</span></div>
+        <div class="stats-row"><strong>🏫 班级数</strong><span id="totalClasses">0</span></div>
+        <div class="stats-row"><strong>💎 总获得宝石</strong><span id="totalGemsAll">0</span></div>
+        <div class="stats-row"><strong>❌ 总错误笔画</strong><span id="totalMistakesAll">0</span></div>
+        <div class="stats-row"><strong>📝 练习总字数</strong><span id="totalCharsWritten">0</span></div>
+      </div>
+      <div class="filter-row">
+        <span>📌 筛选班级：</span>
+        <select id="classFilterSelect" class="filter-select">
+          <option value="all">全部班级</option>
+        </select>
+        <button id="resetFilterBtn" class="filter-select" style="background:#f3f4f6;">重置筛选</button>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button id="exportFullDataBtn" class="success">📥 导出详细数据 CSV</button>
+        <button id="exportSummaryBtn" class="primary">📊 导出汇总报表 CSV</button>
+        <button id="exportClassReportBtn" class="warning">🏫 按班级导出 CSV</button>
+        <button id="clearDataBtn" class="danger">🗑️ 清空所有数据</button>
+      </div>
+      <div id="scoreTableContainer" style="max-height:400px; overflow:auto; margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- 学生登录界面 -->
+  <div id="loginPanel" class="hidden">
+    <div class="card login-card">
+      <div class="title">✨ 汉字笔顺挑战 ✨</div>
+      <div class="label" style="text-align:center;">请选择你的班级</div>
+      <select id="studentClassSelect" class="login-select">
+        <option value="">请选择班级</option>
+        <option value="1C1">1C1</option><option value="1C2">1C2</option><option value="1C3">1C3</option><option value="1C4">1C4</option>
+        <option value="2C1">2C1</option><option value="2C2">2C2</option><option value="2C3">2C3</option><option value="2C4">2C4</option><option value="2C5">2C5</option>
+        <option value="3C1">3C1</option><option value="3C2">3C2</option><option value="3C3">3C3</option><option value="3C4">3C4</option><option value="3C5">3C5</option><option value="3C6">3C6</option>
+        <option value="4C1">4C1</option><option value="4C2">4C2</option><option value="4C3">4C3</option><option value="4C4">4C4</option><option value="4C5">4C5</option><option value="4C6">4C6</option>
+        <option value="5C1">5C1</option><option value="5C2">5C2</option><option value="5C3">5C3</option><option value="5C4">5C4</option><option value="5C5">5C5</option><option value="5C6">5C6</option><option value="5C7">5C7</option>
+        <option value="6C1">6C1</option><option value="6C2">6C2</option><option value="6C3">6C3</option><option value="6C4">6C4</option><option value="6C5">6C5</option><option value="6C6">6C6</option><option value="6C7">6C7</option>
+      </select>
+      <div class="label" style="text-align:center; margin-top:8px;">请输入你的名字</div>
+      <input type="text" id="studentNameInput" class="login-input" placeholder="例如：小明" maxlength="20" autocomplete="off">
+      <div class="row center" style="margin-top:20px;">
+        <button id="loginBtn" class="primary" style="padding:12px 32px;">开始练习</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 学生面板 -->
+  <div id="studentPanel" class="hidden">
+    <div class="title">✨ 汉字笔顺挑战 · <span id="studentClassDisplay"></span> <span id="studentNameDisplay"></span> ✨</div>
+    <div class="split-container">
+      <div class="left-panel">
+        <div class="card" style="margin-bottom:16px; text-align:center;">
+          <div class="row center" style="flex-direction:column; gap:12px;">
+            <button class="primary modeBtn" data-mode="learn" style="width:85%;">👀 看一看</button>
+            <button class="primary modeBtn" data-mode="write" style="width:85%;">✍️ 写一写</button>
+            <button class="warning modeBtn challenge-locked" data-mode="easy" id="easyLockedBtn" style="width:85%;">⭐ 初级 🔒</button>
+            <button class="warning modeBtn challenge-locked" data-mode="medium" id="mediumLockedBtn" style="width:85%;">⭐⭐ 中级 🔒</button>
+            <button class="warning modeBtn challenge-locked" data-mode="hard" id="hardLockedBtn" style="width:85%;">⭐⭐⭐ 高级 🔒</button>
+          </div>
+        </div>
+        <div class="mode-desc-card">
+          <div class="desc-line">👀 看一看：专心看一次</div>
+          <div class="desc-line">✍️ 写一写：动手写一遍</div>
+          <div class="desc-line">🔒 挑战模式：需密码解锁</div>
+          <div class="desc-line" style="color:#f59e0b;">💡 提示：必须认真写完每个字才能获得宝石！</div>
+        </div>
+      </div>
+
+      <div class="right-panel" id="rightPanel">
+        <div id="challengeUnlockArea" class="card unlock-card hidden" style="margin-top:0;">
+          <div class="label" style="font-weight:600;">🔐 挑战模式已锁定</div>
+          <div class="unlock-row">
+            <input type="password" id="challengePasswordInput" class="unlock-input" placeholder="请输入密码" autocomplete="off">
+            <button id="submitUnlockBtn" class="unlock-btn">🔓 解锁挑战</button>
+          </div>
+        </div>
+
+        <div class="card hidden" id="gameArea" style="margin-top:0;">
+          <div class="row center">
+            <div class="gem-counter" id="gemCounter" style="display:none;">
+              <span class="gem-icon">💎</span>
+              <span id="gemCount">0</span>
+            </div>
+           
+          </div>
+          <div id="timer">⏰ 剩余时间：0:00</div>
+          <div id="currentCharLine">📝 当前字：-</div>
+          <div id="charStage"><div id="charBox"></div></div>
+          <div class="row center" style="margin-top:12px;" id="buttonRow">
+            <button id="playBtn" style="background:#334155; color:white;">▶ 播放笔顺</button>
+            <button id="nextBtn" class="primary">➡️ 下一个</button>
+            <button id="resetHomeBtn" class="danger">🏠 返回主页</button>
+          </div>
+          <div id="progressText" class="label" style="text-align:center; margin-top:8px;"></div>
+          <div id="strokeInfo" class="label" style="text-align:center; color:#2563eb;"></div>
+        </div>
+        <div class="card hidden" id="resultCard" style="margin-top:0;"><div class="resultBox" id="result"></div><div class="row center" style="margin-top:12px;"><button id="restartHomeBtn" class="primary">回到选择页面</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== 班级列表 ====================
+const classList = ["1C1","1C2","1C3","1C4","2C1","2C2","2C3","2C4","2C5","3C1","3C2","3C3","3C4","3C5","3C6","4C1","4C2","4C3","4C4","4C5","4C6","5C1","5C2","5C3","5C4","5C5","5C6","5C7","6C1","6C2","6C3","6C4","6C5","6C6","6C7"];
+
+// ==================== 成绩存储 ====================
+let scoreRecords = JSON.parse(localStorage.getItem('hanziScores_v9') || '[]');
+let currentClassFilter = "all";
+
+function saveScore(studentName, studentClass, mode, gems, mistakes, correctChars, rankName, durationSec = 0, charDetails = []) {
+  const record = {
+    id: Date.now() + Math.random(),
+    studentName,
+    studentClass: studentClass || "未知班级",
+    mode: mode === 'easy' ? '初级挑战' : (mode === 'medium' ? '中级挑战' : (mode === 'hard' ? '高级挑战' : (mode === 'learn' ? '看一看' : '写一写'))),
+    modeCode: mode,
+    gems: gems || 0,
+    mistakes: mistakes || 0,
+    correctChars: correctChars || 0,
+    rank: rankName || (mode === 'learn' || mode === 'write' ? '练习模式' : '青铜学徒'),
+    duration: durationSec,
+    charDetails: JSON.stringify(charDetails),
+    date: new Date().toLocaleString(),
+    timestamp: Date.now()
+  };
+  scoreRecords.push(record);
+  localStorage.setItem('hanziScores_v9', JSON.stringify(scoreRecords));
+  updateTeacherUI();
+  console.log('💾 成绩已保存:', record);
+}
+
+function updateTeacherUI() {
+  updateClassFilterOptions();
+  updateTeacherScoreTable();
+  updateStatistics();
+}
+
+function updateClassFilterOptions() {
+  const classes = [...new Set(scoreRecords.map(r => r.studentClass).filter(c => c))];
+  const select = document.getElementById('classFilterSelect');
+  if(!select) return;
+  const currentValue = select.value;
+  select.innerHTML = '<option value="all">全部班级</option>';
+  classes.sort().forEach(c => {
+    select.innerHTML += `<option value="${c}">${c}</option>`;
+  });
+  select.value = currentValue;
+}
+
+function updateStatistics() {
+  let filteredRecords = getFilteredRecords();
+  const totalSessions = filteredRecords.length;
+  const uniqueStudents = [...new Set(filteredRecords.map(r => `${r.studentName}_${r.studentClass}`))].length;
+  const uniqueClasses = [...new Set(filteredRecords.map(r => r.studentClass).filter(c => c))].length;
+  const totalGems = filteredRecords.reduce((sum, r) => sum + (r.gems || 0), 0);
+  const totalMistakes = filteredRecords.reduce((sum, r) => sum + (r.mistakes || 0), 0);
+  const totalChars = filteredRecords.reduce((sum, r) => sum + (r.correctChars || 0), 0);
+  document.getElementById('totalSessions') && (document.getElementById('totalSessions').innerText = totalSessions);
+  document.getElementById('totalStudents') && (document.getElementById('totalStudents').innerText = uniqueStudents);
+  document.getElementById('totalClasses') && (document.getElementById('totalClasses').innerText = uniqueClasses);
+  document.getElementById('totalGemsAll') && (document.getElementById('totalGemsAll').innerText = totalGems);
+  document.getElementById('totalMistakesAll') && (document.getElementById('totalMistakesAll').innerText = totalMistakes);
+  document.getElementById('totalCharsWritten') && (document.getElementById('totalCharsWritten').innerText = totalChars);
+}
+
+function getFilteredRecords() {
+  if (currentClassFilter === "all") return scoreRecords;
+  return scoreRecords.filter(r => r.studentClass === currentClassFilter);
+}
+
+function updateTeacherScoreTable() {
+  const container = document.getElementById('scoreTableContainer');
+  if(!container) return;
+  let filteredRecords = getFilteredRecords();
+  if(filteredRecords.length === 0) { 
+    container.innerHTML = '<p style="text-align:center;color:#999;">暂无学习数据，学生完成练习后会显示在这里</p>'; 
+    return; 
+  }
+  let html = '<table class="score-table"><thead><tr><th>班级</th><th>学生</th><th>模式</th><th>宝石</th><th>错笔</th><th>正确字数</th><th>等级</th><th>时长(秒)</th><th>时间</th></tr></thead><tbody>';
+  filteredRecords.slice().reverse().forEach(r => {
+    html += `<tr><td>${escapeHtml(r.studentClass || '-')}</td><td>${escapeHtml(r.studentName)}</td><td>${r.mode}</td><td>${r.gems}</td><td>${r.mistakes}</td><td>${r.correctChars}</td><td>${r.rank}</td><td>${r.duration || '-'}</td><td>${r.date}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  container.innerHTML = html;
+}
+
+function exportFullData() {
+  if(scoreRecords.length === 0) { alert('暂无数据'); return; }
+  let csv = '\uFEFF班级,学生姓名,模式,宝石数量,错笔总数,正确字数,等级称号,练习时长(秒),详细数据,完成时间\n';
+  scoreRecords.forEach(r => {
+    csv += `"${r.studentClass || ''}","${r.studentName}",${r.mode},${r.gems},${r.mistakes},${r.correctChars},${r.rank},${r.duration || 0},"${escapeCsv(r.charDetails || '')}",${r.date}\n`;
+  });
+  downloadCSV(csv, '汉字笔顺_详细数据.csv');
+}
+
+function exportSummary() {
+  if(scoreRecords.length === 0) { alert('暂无数据'); return; }
+  const studentStats = {};
+  scoreRecords.forEach(r => {
+    const key = `${r.studentClass}_${r.studentName}`;
+    if(!studentStats[key]) studentStats[key] = { studentClass: r.studentClass, studentName: r.studentName, sessions:0, totalGems:0, totalMistakes:0, totalChars:0, modes: {} };
+    studentStats[key].sessions++;
+    studentStats[key].totalGems += r.gems || 0;
+    studentStats[key].totalMistakes += r.mistakes || 0;
+    studentStats[key].totalChars += r.correctChars || 0;
+    studentStats[key].modes[r.mode] = (studentStats[key].modes[r.mode] || 0) + 1;
+  });
+  let csv = '\uFEFF班级,学生姓名,练习次数,总宝石,总错笔,总正确字数,学习模式统计\n';
+  for(const [key, stats] of Object.entries(studentStats)) {
+    const modeStr = Object.entries(stats.modes).map(([m,c]) => `${m}:${c}`).join('; ');
+    csv += `"${stats.studentClass || ''}","${stats.studentName}",${stats.sessions},${stats.totalGems},${stats.totalMistakes},${stats.totalChars},"${modeStr}"\n`;
+  }
+  downloadCSV(csv, '汉字笔顺_学生汇总.csv');
+}
+
+function exportClassReport() {
+  if(scoreRecords.length === 0) { alert('暂无数据'); return; }
+  const classStats = {};
+  scoreRecords.forEach(r => {
+    const className = r.studentClass || '未知班级';
+    if(!classStats[className]) classStats[className] = { sessions:0, totalGems:0, totalMistakes:0, totalChars:0, students: new Set() };
+    classStats[className].sessions++;
+    classStats[className].totalGems += r.gems || 0;
+    classStats[className].totalMistakes += r.mistakes || 0;
+    classStats[className].totalChars += r.correctChars || 0;
+    classStats[className].students.add(r.studentName);
+  });
+  let csv = '\uFEFF班级,练习次数,参与学生数,总宝石,平均宝石/人,总错笔,平均错笔/人,总正确字数\n';
+  for(const [className, stats] of Object.entries(classStats)) {
+    const studentCount = stats.students.size;
+    const avgGems = studentCount > 0 ? (stats.totalGems / studentCount).toFixed(1) : 0;
+    const avgMistakes = studentCount > 0 ? (stats.totalMistakes / studentCount).toFixed(1) : 0;
+    csv += `"${className}",${stats.sessions},${studentCount},${stats.totalGems},${avgGems},${stats.totalMistakes},${avgMistakes},${stats.totalChars}\n`;
+  }
+  downloadCSV(csv, '汉字笔顺_班级报表.csv');
+}
+
+function downloadCSV(csv, filename) {
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function clearAllData() {
+  if(confirm('⚠️ 确定要清空所有学生学习数据吗？此操作不可恢复！')) {
+    scoreRecords = [];
+    localStorage.setItem('hanziScores_v9', JSON.stringify(scoreRecords));
+    updateTeacherUI();
+    alert('数据已清空');
+  }
+}
+
+function escapeHtml(str) { return String(str).replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+function escapeCsv(str) { return String(str).replace(/"/g, '""'); }
+
+// ==================== 教师端 ====================
+function parseChars(text){ return text.split(/[、，,]+/).map(c=>c.trim()).filter(Boolean); }
+function clampInt(n,min,max,fallback){ n=parseInt(n,10); if(!Number.isFinite(n)) return fallback; return Math.max(min,Math.min(max,n)); }
+function getBaseURL(){ return window.location.href.split("?")[0]; }
+function getTeacherChallengePassword(){ return document.getElementById("challengePwInput").value.trim() || "1234"; }
+function getTeacherMinutes(){ return clampInt(document.getElementById("timeInput").value,1,60,2); }
+
+function generateStudentURL(){
+  const raw = document.getElementById("charInput").value;
+  const charsList = parseChars(raw);
+  if(charsList.length===0){ alert("❌ 请至少输入一个汉字"); return null; }
+  const minutes = getTeacherMinutes();
+  const challengePw = getTeacherChallengePassword();
+  const url = getBaseURL() + "?chars=" + encodeURIComponent(charsList.join(",")) + "&t=" + encodeURIComponent(minutes) + "&cpw=" + encodeURIComponent(challengePw);
+  document.getElementById("urlBox").value = url;
+  return url;
+}
+function openGameDemo(){ const url = generateStudentURL(); if(url) window.open(url, '_blank'); }
+function generateQRCode(){ const url = generateStudentURL(); if(!url) return; const qrDiv = document.getElementById("qrcode"); qrDiv.innerHTML = ""; try { new QRCode(qrDiv, { text: url, width: 220, height: 220, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H }); } catch(e) { qrDiv.innerHTML = `<div><p>📱 二维码生成失败</p><p>请直接复制链接</p></div>`; } }
+
+document.getElementById("genUrlBtn")?.addEventListener("click", generateStudentURL);
+document.getElementById("openGameBtn")?.addEventListener("click", openGameDemo);
+document.getElementById("genQrBtn")?.addEventListener("click", generateQRCode);
+document.getElementById("exportFullDataBtn")?.addEventListener("click", exportFullData);
+document.getElementById("exportSummaryBtn")?.addEventListener("click", exportSummary);
+document.getElementById("exportClassReportBtn")?.addEventListener("click", exportClassReport);
+document.getElementById("clearDataBtn")?.addEventListener("click", clearAllData);
+document.getElementById("classFilterSelect")?.addEventListener("change", (e) => {
+  currentClassFilter = e.target.value;
+  updateTeacherUI();
+});
+document.getElementById("resetFilterBtn")?.addEventListener("click", () => {
+  currentClassFilter = "all";
+  document.getElementById("classFilterSelect").value = "all";
+  updateTeacherUI();
+});
+
+// ==================== 学生端 ====================
+const urlParams = new URLSearchParams(window.location.search);
+const urlChars = urlParams.get("chars");
+let studentChars = [], challengePasswordFromTeacher = "", gameSecondsTotal = 120, timeLeft = 120, timerInterval = null;
+let currentMode = null, writer = null, currentIndex = 0, completedCharsCount = 0, mistakesThisChar = 0, strokeMistakesMap = {};
+let isChallengeUnlocked = false, gameActive = false, waitingForNext = false;
+let totalGems = 0, totalMistakes = 0, currentStudentName = "", currentStudentClass = "", sessionStartTime = null;
+let currentCharCompleted = false;
+
+function getRankByGems(gems) {
+  if(gems >= 50) return "👑 钻石大师";
+  if(gems >= 35) return "🏆 黄金勇士";
+  if(gems >= 10) return "🥈 白银书生";
+  return "🥉 青铜学徒";
+}
+
+function getWriterConfig(mode){
+  let config = { width: 260, height: 260, padding: 18, radicalColor: null, strokeColor: "#2c3e66" };
+  if(mode === 'write'){
+    config.showCharacter = true;
+    config.showOutline = true;
+    config.outlineColor = "#D3D3D3";
+    config.characterColor = "#d4d4d4";
+    config.strokeColor = "#1e40af";
+  } else if(mode === 'learn'){
+    config.showCharacter = false;
+    config.showOutline = true;
+    config.outlineColor = "#cbd5e1";
+    config.strokeColor = "#2c3e66";
+  } else {
+    config.showCharacter = false;
+    config.showOutline = false;
+    config.strokeColor = "#2c3e66";
+  }
+  return config;
+}
+
+function getDifficultyProfile(){
+  if(currentMode === 'easy') return { maxDistance: 28, hintAfter: 2, showHintMsg: true };
+  if(currentMode === 'medium') return { maxDistance: 22, hintAfter: 4, showHintMsg: true };
+  if(currentMode === 'hard') return { maxDistance: 18, hintAfter: 6, showHintMsg: true };
+  return { maxDistance: 28, hintAfter: 999999, showHintMsg: false };
+}
+
+if(urlChars && urlChars.trim() !== ""){
+  document.getElementById("teacherPanel").classList.add("hidden");
+  document.getElementById("loginPanel").classList.remove("hidden");
+  studentChars = urlChars.split(",").map(s=>s.trim()).filter(Boolean);
+  if(studentChars.length === 0) studentChars = ["一","二","三"];
+  const minutesFromUrl = clampInt(urlParams.get("t"), 1, 60, 2);
+  gameSecondsTotal = minutesFromUrl * 60;
+  timeLeft = gameSecondsTotal;
+  challengePasswordFromTeacher = urlParams.get("cpw") || "1234";
+  updateTimerDisplay();
+  document.getElementById("challengeUnlockArea").classList.remove("hidden");
+  document.querySelectorAll(".challenge-locked").forEach(btn => { btn.disabled = true; });
+  console.log('🔧 学生模式初始化完成，汉字列表:', studentChars);
+} else { updateTeacherUI(); }
+
+function updateTimerDisplay(){ const timerSpan = document.getElementById("timer"); if(timerSpan){ let minutes = Math.floor(timeLeft/60), seconds = timeLeft%60; timerSpan.innerText = `⏰ 剩余时间：${minutes}:${seconds.toString().padStart(2,'0')}`; } }
+function stopTimer(){ if(timerInterval){ clearInterval(timerInterval); timerInterval = null; } }
+function startTimerForChallenge(){ if(timerInterval) stopTimer(); timerInterval = setInterval(()=>{ if(timeLeft <= 0){ stopTimer(); endGameTimeOut(); } else { timeLeft--; updateTimerDisplay(); } }, 1000); }
+function destroyWriter(){ if(writer){ try{ writer.cancelQuiz(); writer.destroy(); }catch(e){} writer = null; } document.getElementById("charBox").innerHTML = ""; }
+
+function addGem() {
+  totalGems++;
+  const gemSpan = document.getElementById("gemCount");
+  if(gemSpan) gemSpan.innerText = totalGems;
+  console.log('💎 宝石增加! 当前宝石:', totalGems);
+  updateProgressText();
+}
+
+function endGameTimeOut(){
+  if(writer) { try{ writer.cancelQuiz(); }catch(e){} }
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("resultCard").classList.remove("hidden");
+  const rankName = getRankByGems(totalGems);
+  const duration = sessionStartTime ? Math.floor((Date.now() - sessionStartTime) / 1000) : 0;
+  saveScore(currentStudentName, currentStudentClass, currentMode, totalGems, totalMistakes, completedCharsCount, rankName, duration, []);
+  document.getElementById("result").innerHTML = `🎉 <h3>${currentStudentName}，挑战结束！</h3><p>💎 ${totalGems} 颗宝石</p><p>${rankName}</p><p>✅ 正确书写 ${completedCharsCount} 字</p><p>❌ 错笔 ${totalMistakes}</p>`;
+  gameActive = false; if(writer) writer = null; document.getElementById("charBox").innerHTML = ""; waitingForNext = false;
+  const gemCounter = document.getElementById("gemCounter"); if(gemCounter) gemCounter.style.display = "none";
+}
+
+function completeCurrentCharAndNext() {
+  if (!gameActive || currentMode === 'learn' || currentMode === 'write') return;
+  if (currentCharCompleted) return;
+  currentCharCompleted = true;
+  console.log('✅ 完成当前字:', studentChars[currentIndex]);
+  completedCharsCount++;
+  addGem();
+  const infoDiv = document.getElementById("strokeInfo");
+  if(infoDiv) infoDiv.innerHTML = `✨ 获得💎！完成「${studentChars[currentIndex]}」 ✨`;
+  setTimeout(() => {
+    currentIndex = (currentIndex + 1) % studentChars.length;
+    resetMistakesForNewChar();
+    currentCharCompleted = false;
+    loadWriterForChar(studentChars[currentIndex]);
+    updateCurrentCharUI();
+    updateProgressText();
+    if(infoDiv && infoDiv.innerHTML.includes("✨")) infoDiv.innerHTML = "";
+  }, 800);
+}
+
+function loadWriterForChar(character){
+  destroyWriter();
+  if(!character) return;
+  const config = getWriterConfig(currentMode);
+  writer = HanziWriter.create("charBox", character, config);
+  if(currentMode === 'learn'){
+    writer.animateCharacter({ onComplete: () => { if (!waitingForNext) markCurrentCharAsCompleted(); } });
+    return;
+  }
+  if(currentMode === 'write'){
+    writer.quiz({ onComplete: () => { if (!waitingForNext) markCurrentCharAsCompleted(); } });
+    return;
+  }
+  const cfg = getDifficultyProfile();
+  const maxDist = cfg.maxDistance;
+  const hintAfterTimes = cfg.hintAfter;
+  writer.quiz({
+    showHintAfterMisses: false,
+    onStrokeEnd: (strokeIndex, correct)=>{ const infoDiv = document.getElementById("strokeInfo"); if(infoDiv) infoDiv.innerHTML = correct ? `✔️ 第 ${strokeIndex+1} 笔正确` : `❌ 第 ${strokeIndex+1} 笔位置或顺序错误`; },
+    customStrokeValidator: (studentPoints, correctPoints)=>{
+      if(!studentPoints || !correctPoints) return false;
+      let totalDist = 0;
+      for(let i=0;i<Math.min(studentPoints.length, correctPoints.length);i++) totalDist += Math.hypot(studentPoints[i][0]-correctPoints[i][0], studentPoints[i][1]-correctPoints[i][1]);
+      let avgDist = totalDist / Math.min(studentPoints.length, correctPoints.length);
+      return avgDist <= maxDist;
+    },
+    onMistake: (data)=>{ mistakesThisChar++; totalMistakes++; let strokeNum = data.strokeNum; strokeMistakesMap[strokeNum] = (strokeMistakesMap[strokeNum] || 0) + 1; 
+      if(strokeMistakesMap[strokeNum] >= hintAfterTimes && cfg.showHintMsg){ writer.highlightStroke(strokeNum, { strokeColor: "#facc15" }); setTimeout(()=>{ try{ writer.clearHighlights(); }catch(e){} }, 1200); } },
+    onComplete: () => { completeCurrentCharAndNext(); }
+  });
+}
+
+function markCurrentCharAsCompleted() { if(waitingForNext) return; waitingForNext = true; completedCharsCount++; updateProgressText(); }
+function nextCharManual() {
+  if (!gameActive) return;
+  if (currentMode === 'learn' || currentMode === 'write') {
+    if (!waitingForNext) { completedCharsCount++; updateProgressText(); }
+    currentIndex = (currentIndex + 1) % studentChars.length;
+    resetMistakesForNewChar(); waitingForNext = false;
+    loadWriterForChar(studentChars[currentIndex]); updateCurrentCharUI(); updateProgressText();
+    document.getElementById("strokeInfo").innerHTML = "";
+  } else {
+    if(writer){ try{ writer.cancelQuiz(); }catch(e){} }
+    currentIndex = (currentIndex + 1) % studentChars.length;
+    resetMistakesForNewChar(); currentCharCompleted = false;
+    loadWriterForChar(studentChars[currentIndex]); updateCurrentCharUI();
+  }
+}
+function forceCompleteChar() {
+  if (!gameActive || currentMode === 'learn' || currentMode === 'write') return;
+  if (currentCharCompleted) return;
+  if (writer) { try { writer.cancelQuiz(); } catch(e) {} }
+  completeCurrentCharAndNext();
+}
+function resetMistakesForNewChar(){ mistakesThisChar = 0; strokeMistakesMap = {}; }
+function updateCurrentCharUI(){ const charSpan = document.getElementById("currentCharLine"); if(charSpan && studentChars.length) charSpan.innerText = `📝 当前字：${studentChars[currentIndex]}`; else if(charSpan) charSpan.innerText = "📝 当前字：-"; }
+function updateProgressText(){ 
+  const progDiv = document.getElementById("progressText"); 
+  if(!progDiv) return; 
+  if(currentMode === 'learn' || currentMode === 'write') progDiv.innerText = `📖 ${currentMode==='learn'?'看一看':'写一写'}  `; 
+  else progDiv.innerText = `🏆 ${currentMode==='easy'?'初级':(currentMode==='medium'?'中级':'高级')} · 正确: ${completedCharsCount} 字 | ❌ ${totalMistakes}`; 
+}
+
+function startGameMode(mode){
+  if(mode !== 'learn' && mode !== 'write'){
+    if(!isChallengeUnlocked){ alert("🔐 挑战模式尚未解锁！请先输入密码解锁。"); return; }
+    if(timeLeft <= 0){ alert("⏰ 挑战时间已耗尽，无法开始。"); return; }
+  }
+  if(timerInterval) stopTimer(); 
+  destroyWriter(); 
+  currentMode = mode; 
+  completedCharsCount = 0; 
+  currentIndex = 0; 
+  waitingForNext = false; 
+  totalGems = 0; 
+  totalMistakes = 0; 
+  currentCharCompleted = false;
+  sessionStartTime = Date.now();
+  const gemSpan = document.getElementById("gemCount"); if(gemSpan) gemSpan.innerText = "0"; 
+  resetMistakesForNewChar(); gameActive = true;
+  document.getElementById("resultCard").classList.add("hidden"); document.getElementById("gameArea").classList.remove("hidden");
+  const timerDom = document.getElementById("timer"); const gemCounter = document.getElementById("gemCounter");
+  const forceCompleteBtn = document.getElementById("forceCompleteBtn"); const playBtn = document.getElementById("playBtn"); const nextBtn = document.getElementById("nextBtn");
+  if(mode === 'learn' || mode === 'write'){
+    timerDom.classList.add("hidden"); if(gemCounter) gemCounter.style.display = "none";
+    if(forceCompleteBtn) forceCompleteBtn.style.display = "none";
+    playBtn.style.display = "inline-flex"; nextBtn.style.display = "inline-flex";
+  } else {
+    timerDom.classList.remove("hidden"); if(gemCounter) gemCounter.style.display = "inline-flex";
+    if(forceCompleteBtn) forceCompleteBtn.style.display = "inline-flex";
+    playBtn.style.display = "none"; nextBtn.style.display = "none";
+    timeLeft = gameSecondsTotal; updateTimerDisplay(); startTimerForChallenge();
+  }
+  updateCurrentCharUI(); loadWriterForChar(studentChars[currentIndex]); updateProgressText();
+  document.getElementById("challengeUnlockArea").classList.add("hidden");
+}
+
+function resetToHome(){ 
+  if(timerInterval) stopTimer(); destroyWriter(); gameActive = false; waitingForNext = false; currentCharCompleted = false;
+  document.getElementById("gameArea").classList.add("hidden"); document.getElementById("resultCard").classList.add("hidden");
+  document.getElementById("challengeUnlockArea").classList.remove("hidden"); timeLeft = gameSecondsTotal; updateTimerDisplay();
+  updateChallengeButtonsState(); completedCharsCount = 0; currentIndex = 0; totalGems = 0; totalMistakes = 0;
+  const gemSpan = document.getElementById("gemCount"); if(gemSpan) gemSpan.innerText = "0";
+  const gemCounter = document.getElementById("gemCounter"); if(gemCounter) gemCounter.style.display = "none";
+  document.getElementById("strokeInfo").innerHTML = "";
+}
+function updateChallengeButtonsState(){ const btns = document.querySelectorAll(".challenge-locked"); btns.forEach(btn => { if(isChallengeUnlocked){ btn.disabled = false; btn.innerHTML = btn.innerHTML.replace(" 🔒", ""); } else { btn.disabled = true; if(!btn.innerHTML.includes("🔒")) btn.innerHTML = btn.innerHTML + " 🔒"; } }); }
+function unlockChallengeMode(){ const inputPw = document.getElementById("challengePasswordInput").value; if(inputPw === challengePasswordFromTeacher){ isChallengeUnlocked = true; updateChallengeButtonsState(); document.getElementById("challengeUnlockArea").classList.add("hidden"); alert("✅ 解锁成功！"); } else { alert("❌ 密码错误"); } }
+function restartToHome(){ resetToHome(); }
+
+document.getElementById("loginBtn")?.addEventListener("click", () => {
+  const selectedClass = document.getElementById("studentClassSelect").value;
+  const name = document.getElementById("studentNameInput").value.trim();
+  if(selectedClass === ""){ alert("请选择你的班级"); return; }
+  if(name === ""){ alert("请输入你的名字"); return; }
+  currentStudentClass = selectedClass;
+  currentStudentName = name;
+  document.getElementById("studentClassDisplay").innerText = `[${currentStudentClass}]`;
+  document.getElementById("studentNameDisplay").innerText = name;
+  document.getElementById("loginPanel").classList.add("hidden");
+  document.getElementById("studentPanel").classList.remove("hidden");
+  bindStudentEvents();
+  isChallengeUnlocked = false; updateChallengeButtonsState();
+  if(timerInterval) clearInterval(timerInterval);
+  console.log('👤 学生登录:', currentStudentClass, currentStudentName);
+});
+
+function bindStudentEvents(){
+  document.querySelectorAll(".modeBtn[data-mode]").forEach(btn => { btn.addEventListener("click", () => { const modeVal = btn.getAttribute("data-mode"); if((modeVal === 'easy' || modeVal === 'medium' || modeVal === 'hard') && !isChallengeUnlocked){ alert("🔒 挑战模式被锁定！请先解锁。"); return; } startGameMode(modeVal); }); });
+  document.getElementById("submitUnlockBtn")?.addEventListener("click", unlockChallengeMode);
+  document.getElementById("playBtn")?.addEventListener("click", () => { if(writer && (currentMode === 'learn' || currentMode === 'write')) writer.animateCharacter(); else if(writer && currentMode !== 'learn' && currentMode !== 'write') alert("挑战模式下可通过「看一看」提前学习笔顺。"); });
+  document.getElementById("nextBtn")?.addEventListener("click", nextCharManual);
+  document.getElementById("resetHomeBtn")?.addEventListener("click", resetToHome);
+  document.getElementById("restartHomeBtn")?.addEventListener("click", restartToHome);
+  document.getElementById("forceCompleteBtn")?.addEventListener("click", forceCompleteChar);
+}
+</script>
+</body>
+</html>
